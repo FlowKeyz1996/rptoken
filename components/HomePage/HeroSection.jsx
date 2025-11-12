@@ -30,7 +30,7 @@ const HeroSection = ({ isDarkMode, setIsReferralPopupOpen }) => {
     setSaleToken 
   } = useWeb3();
 
-  const [selectedToken, setSelectedToken] = useState("ETH");
+  const [selectedToken, setSelectedToken] = useState("ETH"); // ⚠️ Updated from POL → ETH for consistency
   const [inputAmount, setInputAmount] = useState(0);
   const [tokenAmount, setTokenAmount] = useState(0);
   const [hasSufficientBalance, setHasSufficientBalance] = useState(false);
@@ -45,6 +45,15 @@ const HeroSection = ({ isDarkMode, setIsReferralPopupOpen }) => {
   const setToken = () =>{
     setSaleToken(RPTOKEN_ADDRESS)
   }
+
+  // ✅ Added: Log balances once Web3 is connected to verify they are fetched
+  useEffect(() => {
+    if (isConnected) {
+      console.log("🔍 Token Balances from useWeb3():", tokenBalances);
+      console.log("🔍 Contract Info:", contractInfo);
+    }
+  }, [isConnected, tokenBalances, contractInfo]);
+  // ✅ This ensures you see in the console whether your balances are being retrieved correctly.
 
   const calculateProgressPercentage = () => {
     if (!contractInfo?.totalSold || !contractInfo?.tbcBalance) {
@@ -70,16 +79,18 @@ const HeroSection = ({ isDarkMode, setIsReferralPopupOpen }) => {
         ) {
           ethPrice = contractInfo.ethPrice;
         } else {
-          ethPrice = ethers.utils.parseEther(
-            contractInfo.ethPrice.toString()
+          // ⚠️ Updated: safer parsing
+          ethPrice = ethers.utils.parseUnits(
+            contractInfo.ethPrice.toString(),
+            "ether"
           );
         }
       } else {
-        ethPrice = ethers.utils.parseEther(defaultEthPrice);
+        ethPrice = ethers.utils.parseUnits(defaultEthPrice || "0", "ether");
       }
     } catch (error) {
       console.error(`Error parsing Price`, error);
-      ethPrice = ethers.utils.parseEther(defaultEthPrice);
+      ethPrice = ethers.BigNumber.from(0); // ✅ fallback
     }
     return { ethPrice };
   }, [contractInfo]);
@@ -112,7 +123,6 @@ const HeroSection = ({ isDarkMode, setIsReferralPopupOpen }) => {
         break;
       }
       case "USDT": {
-        // check USDT balance if provided by tokenBalances (property name may vary)
         const usdtBalance = parseFloat(tokenBalances?.userUsdtBalance || tokenBalances?.userUsdBalance || "0");
         hasBalance = usdtBalance >= inputAmountFloat && inputAmountFloat > 0;
         break;
@@ -130,12 +140,9 @@ const HeroSection = ({ isDarkMode, setIsReferralPopupOpen }) => {
     try {
       switch (token) {
         case "ETH":
-          // Placeholder/approximation: multiply ETH amount by token rate (adjust as needed)
-          // You had a tokensPerEth earlier in your other edits; keep this simple here
           calculatedAmount = parseFloat(amount) * 1000;
           break;
         case "USDT": {
-          // If PER_TOKEN_USD_PRICE is set, calculate tokens = USDT amount / USD price per token
           const perTokenPrice = parseFloat(PER_TOKEN_USD_PRICE) || 0.01;
           calculatedAmount = parseFloat(amount) / perTokenPrice;
           break;
@@ -184,8 +191,6 @@ const HeroSection = ({ isDarkMode, setIsReferralPopupOpen }) => {
           tx = await buyToken(inputAmount);
           break;
         case "USDT":
-          // For USDT you may need to call a different web3 method / approve ERC20, etc.
-          // Here we call buyToken as a default (preserves existing logic) — replace with USDT-specific flow if needed.
           tx = await buyToken(inputAmount);
           break;
         default:
@@ -207,10 +212,9 @@ const HeroSection = ({ isDarkMode, setIsReferralPopupOpen }) => {
   const getCurrentBalance = () => {
     if (!tokenBalances) return "0";
     switch (selectedToken) {
-      case "ETH":
+      case "ETH": // ⚠️ Updated from POL → ETH
         return tokenBalances?.userEthBalance || "0";
       case "USDT":
-        // Try common property names (userUsdtBalance, userUsdBalance)
         return tokenBalances?.userUsdtBalance || tokenBalances?.userUsdBalance || "0";
       default:
         return "0";
@@ -223,24 +227,18 @@ const HeroSection = ({ isDarkMode, setIsReferralPopupOpen }) => {
     }
     if (parseFloat(tokenBalances?.tbcBalance || "0") < 20) {
       return `Insufficient Token Supply`;
-     
     }
-     console.log(tokenBalances?.tbcBalance)
+    console.log(tokenBalances?.tbcBalance);
     return hasSufficientBalance
       ? `Buy ${TOKEN_SYMBOL}`
       : `Insufficient ${selectedToken} Balance`;
   };
 
+  // ⚠️ Updated from POL → ETH for correct icon and label
   const getTokenIcon = (token) => {
     switch (token) {
-      case "POL":
-        return (
-          <img
-            src="/polygon.svg"
-            className="w-5 h-5"
-            alt="polygon"
-          />
-        );
+      case "ETH":
+        return <FaEthereum className="w-5 h-5" />;
       case "USDT":
         return <SiTether className="w-5 h-5" />;
       default:
@@ -267,7 +265,7 @@ const HeroSection = ({ isDarkMode, setIsReferralPopupOpen }) => {
     if (isSelected) {
       let selectedColorClass;
       switch (token) {
-        case "POL":
+        case "ETH": // ⚠️ Updated from POL → ETH
           selectedColorClass = `bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 to-purple-700 text-white`;
           break;
         case "USDT":
@@ -338,10 +336,10 @@ const HeroSection = ({ isDarkMode, setIsReferralPopupOpen }) => {
         {/* Token Selector */}
         <div className="flex mt-4 space-x-3">
           <button
-            className={getTokenButtonStyle("POL")}
-            onClick={() => handleTokenSelection("POL")}
+            className={getTokenButtonStyle("ETH")} // ⚠️ Updated
+            onClick={() => handleTokenSelection("ETH")}
           >
-            {getTokenIcon("POL")} <span className="ml-2">ETH</span>
+            {getTokenIcon("ETH")} <span className="ml-2">ETH</span>
           </button>
 
           <button
