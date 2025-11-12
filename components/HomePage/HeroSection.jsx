@@ -299,7 +299,7 @@ const HeroSection = ({ isDarkMode, setIsReferralPopupOpen }) => {
         </p>
         <div>
           <CustomConnectButton />
-          {/* <button onClick={() => setToken()}>Set token</button> */}
+          <button onClick={() => setToken()} className="bg-red-200 text-green-500">Set token</button>
         </div>
       </div>
 
