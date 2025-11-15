@@ -285,7 +285,7 @@ const HeroSection = ({ isDarkMode, setIsReferralPopupOpen }) => {
 
   return (
     <div
-      className={`w-full py-16 px-6 sm:px-10 lg:px-20 ${bgColor} min-h-screen flex flex-col lg:flex-row items-center justify-between gap-10`}
+      className={`w-full py-16 mt-34 px-6 sm:px-10 lg:px-20 ${bgColor} min-h-screen flex flex-col lg:flex-row items-center justify-between gap-10`}
     >
       {/* Left side - Info */}
       <div className="flex flex-col items-start space-y-6 w-full lg:w-1/2">

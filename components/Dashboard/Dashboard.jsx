@@ -1,18 +1,15 @@
 import React, { useState, useEffect } from "react";
 import Sidebar from "../Global/Sidebar";
-import { FiMoon, FiSun, FiHome, FiMenu, FiDownload } from "react-icons/fi";
+import { FiMoon, FiSun, FiHome, FiMenu } from "react-icons/fi";
 import Link from "next/link";
 import { useWeb3 } from "@/context/Web3Provider";
 
 const Dashboard = () => {
-  const { contractInfo, tokenBalances, globalLoad, transactions, exportCSV, topBuyers } = useWeb3();
+  const { contractInfo, tokenBalances, globalLoad /*, transactions, exportCSV, topBuyers */ } = useWeb3();
 
   const [isDarkMode, setIsDarkMode] = useState(true);
   const [activeTab, setActiveTab] = useState("overview");
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
-  const [walletFilter, setWalletFilter] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
-  const PAGE_SIZE = 5;
 
   const toggleDarkMode = () => {
     const newTheme = !isDarkMode;
@@ -26,17 +23,6 @@ const Dashboard = () => {
   const cardClasses = `p-6 rounded-xl shadow transition-all duration-300 ${
     isDarkMode ? "bg-[#1B1723]" : "bg-white"
   }`;
-
-  /** Filtered transactions */
-  const filteredTx = transactions.filter(tx => {
-    if (!walletFilter) return true;
-    const addr = tx.buyer || tx.claimer;
-    return addr.toLowerCase().includes(walletFilter.toLowerCase());
-  });
-
-  /** Pagination */
-  const pageCount = Math.ceil(filteredTx.length / PAGE_SIZE);
-  const paginatedTx = filteredTx.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
   /** Overview Cards */
   const renderOverviewCards = () => (
@@ -62,91 +48,11 @@ const Dashboard = () => {
     </div>
   );
 
-  /** Transactions Tab */
-  const renderTransactions = () => (
+  /** Placeholder for admin-only sections */
+  const renderAdminPlaceholder = (sectionName) => (
     <section className={`p-6 rounded-2xl shadow-md ${isDarkMode ? "bg-[#14101A]" : "bg-white"}`}>
-      <div className="flex justify-between mb-4">
-        <h2 className="text-xl font-semibold text-purple-500">Recent Transactions</h2>
-        <button
-          onClick={() => exportCSV(filteredTx)}
-          className="flex items-center gap-2 px-3 py-1 rounded bg-purple-500 text-white hover:bg-purple-600"
-        >
-          <FiDownload /> Export CSV
-        </button>
-      </div>
-
-      <input
-        type="text"
-        placeholder="Filter by wallet address"
-        className="mb-4 p-2 w-full rounded bg-gray-200 dark:bg-gray-800 text-gray-900 dark:text-gray-100"
-        value={walletFilter}
-        onChange={e => {
-          setWalletFilter(e.target.value);
-          setCurrentPage(1);
-        }}
-      />
-
-      {paginatedTx.length > 0 ? (
-        <ul className="divide-y divide-gray-700">
-          {paginatedTx.map((tx, i) => {
-            const addr = tx.buyer || tx.claimer;
-            const amount = tx.tokensBought || tx.tokensClaimed;
-            return (
-              <li key={tx.txHash + i} className="py-2 text-sm flex justify-between items-center">
-                <div>
-                  <span className="font-semibold">{tx.type}</span> - {addr.slice(0, 6)}...{addr.slice(-4)} bought{" "}
-                  <span className="font-semibold">{amount}</span> $RP
-                </div>
-                <a
-                  href={`https://sepolia.etherscan.io/tx/${tx.txHash}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-blue-400 hover:underline"
-                >
-                  View
-                </a>
-              </li>
-            );
-          })}
-        </ul>
-      ) : (
-        <p className="text-gray-400">No transactions found.</p>
-      )}
-
-      <div className="flex justify-center mt-4 gap-2">
-        {Array.from({ length: pageCount }, (_, i) => (
-          <button
-            key={i}
-            onClick={() => setCurrentPage(i + 1)}
-            className={`px-3 py-1 rounded ${
-              currentPage === i + 1 ? "bg-purple-500 text-white" : "bg-gray-300 dark:bg-gray-700"
-            }`}
-          >
-            {i + 1}
-          </button>
-        ))}
-      </div>
-    </section>
-  );
-
-  /** Top Buyers Tab */
-  const renderTopBuyers = () => (
-    <section className={`p-6 rounded-2xl shadow-md ${isDarkMode ? "bg-[#14101A]" : "bg-white"}`}>
-      <h2 className="text-xl font-semibold text-purple-500 mb-4">Top Buyers</h2>
-      {topBuyers.length > 0 ? (
-        <ul className="divide-y divide-gray-700">
-          {topBuyers.map((buyer, i) => (
-            <li key={buyer.address} className="py-2 flex justify-between items-center text-sm">
-              <span>
-                {i + 1}. {buyer.address.slice(0, 6)}...{buyer.address.slice(-4)}
-              </span>
-              <span className="font-semibold">{buyer.totalTokens.toFixed(2)} $RP</span>
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <p className="text-gray-400">No buyers found.</p>
-      )}
+      <h2 className="text-xl font-semibold text-purple-500 mb-4">{sectionName}</h2>
+      <p className="text-gray-400">This section is for admin purposes only and will be added on mainnet.</p>
     </section>
   );
 
@@ -155,9 +61,9 @@ const Dashboard = () => {
       case "overview":
         return renderOverviewCards();
       case "transactions":
-        return renderTransactions();
+        return renderAdminPlaceholder("Transactions");
       case "topbuyers":
-        return renderTopBuyers();
+        return renderAdminPlaceholder("Top Buyers");
       default:
         return null;
     }

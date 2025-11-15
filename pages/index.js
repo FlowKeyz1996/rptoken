@@ -72,7 +72,7 @@ export default function Home (){
       <Header isDarkMode={isDarkMode} toggleDarkMode={toggleDarkMode}>
 
       </Header>
-      <main>
+      <main className="pt-32 lg:pt-0">
         <HeroSection/>
         <BlockchainFeatures/>
         <Footer/>
