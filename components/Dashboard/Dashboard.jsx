@@ -1,19 +1,21 @@
 import React, { useState } from "react";
 import Sidebar from "../Global/Sidebar";
-import { FiMoon, FiSun } from "react-icons/fi";
-import { useWeb3 } from "@/context/Web3Provider"; // ✅ use your Web3Provider
+import { FiMoon, FiSun, FiHome, FiMenu } from "react-icons/fi";
+import Link from "next/link";
+import { useWeb3 } from "@/context/Web3Provider";
 
 const Dashboard = () => {
-  const { 
-    contractInfo, 
-    tokenBalances, 
-    account, 
+  const {
+    contractInfo,
+    tokenBalances,
+    account,
     isConnected,
-    globalLoad 
-  } = useWeb3(); // ✅ get all dynamic info
+    globalLoad,
+  } = useWeb3();
 
   const [isDarkMode, setIsDarkMode] = useState(true);
   const [activeTab, setActiveTab] = useState("overview");
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
   const toggleDarkMode = () => {
     const newTheme = !isDarkMode;
@@ -39,6 +41,7 @@ const Dashboard = () => {
           {globalLoad ? "Loading..." : tokenBalances.usertbcBalance || "0"}
         </p>
       </div>
+
       <div className={cardClasses}>
         <h3 className={`text-lg font-medium ${secondaryTextColor}`}>
           Your ETH Balance
@@ -47,6 +50,7 @@ const Dashboard = () => {
           {globalLoad ? "Loading..." : tokenBalances.userEthBalance || "0"}
         </p>
       </div>
+
       <div className={cardClasses}>
         <h3 className={`text-lg font-medium ${secondaryTextColor}`}>
           Total Tokens Sold
@@ -62,6 +66,7 @@ const Dashboard = () => {
     switch (activeTab) {
       case "overview":
         return renderOverviewCards();
+
       case "transactions":
         const txs = JSON.parse(localStorage.getItem("tokenTransactions")) || [];
         return (
@@ -73,6 +78,7 @@ const Dashboard = () => {
             <h2 className="text-xl font-semibold text-purple-500 mb-4">
               Recent Transactions
             </h2>
+
             {txs.length > 0 ? (
               <ul className="divide-y divide-gray-700">
                 {txs.map((tx, i) => (
@@ -87,6 +93,7 @@ const Dashboard = () => {
             )}
           </section>
         );
+
       default:
         return null;
     }
@@ -98,6 +105,7 @@ const Dashboard = () => {
         isDarkMode ? "bg-[#0E0B12] text-gray-100" : "bg-gray-50 text-gray-900"
       }`}
     >
+      {/* DESKTOP SIDEBAR */}
       <aside className="w-64 border-r hidden md:block">
         <Sidebar
           activeTab={activeTab}
@@ -106,14 +114,47 @@ const Dashboard = () => {
         />
       </aside>
 
-      <main className="flex-1 p-6 md:p-10">
+      {/* MOBILE SIDEBAR OVERLAY */}
+      {mobileSidebarOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 md:hidden z-20"></div>
+      )}
+
+      {/* MOBILE SLIDE-IN SIDEBAR */}
+      <div
+        className={`fixed top-0 left-0 h-full w-64 z-30 transform ${
+          mobileSidebarOpen ? "translate-x-0" : "-translate-x-full"
+        } transition-transform duration-300 md:hidden`}
+      >
+        <Sidebar
+          activeTab={activeTab}
+          onMenuSelect={(tab) => {
+            setActiveTab(tab);
+            setMobileSidebarOpen(false);
+          }}
+          isDarkMode={isDarkMode}
+        />
+      </div>
+
+      {/* MAIN CONTENT */}
+      <main className="flex-1 p-6 md:p-10 pb-24">
         <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-500 to-purple-600">
+          {/* LEFT: MOBILE MENU BUTTON */}
+          <button
+            className="md:hidden p-2 rounded-lg bg-[#1B1723] text-white shadow"
+            onClick={() => setMobileSidebarOpen(true)}
+          >
+            <FiMenu size={22} />
+          </button>
+
+          {/* CENTER TITLE */}
+          <h1 className="text-2xl md:text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-500 to-purple-600 text-center flex-1">
             RPToken Dashboard
           </h1>
+
+          {/* DARK MODE TOGGLE */}
           <button
             onClick={toggleDarkMode}
-            className="p-2 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:from-blue-600 hover:to-purple-700 transition-all duration-300"
+            className="p-2 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow"
           >
             {isDarkMode ? <FiSun size={20} /> : <FiMoon size={20} />}
           </button>
@@ -121,6 +162,43 @@ const Dashboard = () => {
 
         {renderContent()}
       </main>
+
+      {/* MOBILE BOTTOM NAVIGATION */}
+      <div
+        className={`fixed bottom-0 left-0 w-full py-4 px-6 flex justify-between items-center md:hidden shadow-xl ${
+          isDarkMode ? "bg-[#1B1723]" : "bg-white"
+        }`}
+      >
+        <button
+          onClick={() => setActiveTab("overview")}
+          className={`flex-1 text-center ${
+            activeTab === "overview"
+              ? "text-purple-500 font-semibold"
+              : "text-gray-400"
+          }`}
+        >
+          Overview
+        </button>
+
+        <button
+          onClick={() => setActiveTab("transactions")}
+          className={`flex-1 text-center ${
+            activeTab === "transactions"
+              ? "text-purple-500 font-semibold"
+              : "text-gray-400"
+          }`}
+        >
+          Transactions
+        </button>
+
+        {/* BACK HOME BUTTON */}
+        <Link
+          href="/"
+          className="flex-1 text-center text-blue-500 font-semibold"
+        >
+          <FiHome size={22} className="mx-auto" />
+        </Link>
+      </div>
     </div>
   );
 };
