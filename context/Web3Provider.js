@@ -13,7 +13,6 @@ import { handleTransactionError, erc20Abi } from "./Utility";
 const CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_TOKEN_ICO_ADDRESS;
 const TOKEN_DECIMAL = process.env.NEXT_PUBLIC_TOKEN_DECIMAL;
 const TOKEN_SYMBOL = process.env.NEXT_PUBLIC_TOKEN_SYMBOL;
-const PER_TOKEN_USD_PRICE = process.env.NEXT_PUBLIC_PER_TOKEN_USD_PRICE;
 const tokenICOAbi = TOKEN_ICO_ABI.abi;
 const RPC_URL = process.env.NEXT_PUBLIC_RPC_URL;
 
@@ -188,8 +187,8 @@ export const Web3Provider = ({ children }) => {
     }
   };
 
-  /** Buy Token */
-  const buyToken = async ethAmount => {
+  /** Buy Token - toast shows actual tokens received */
+  const buyToken = async (ethAmount) => {
     if (!contract || !address) return null;
 
     const toastId = notify.start(`Buying ${TOKEN_SYMBOL}...`);
@@ -200,20 +199,29 @@ export const Web3Provider = ({ children }) => {
       const receipt = await tx.wait();
 
       if (receipt.status === 1) {
-        const tokenReceived = parseFloat(ethAmount) / PER_TOKEN_USD_PRICE;
+        // Grab TokensPurchased event from receipt
+        const purchaseEvent = receipt.events?.find(e => e.event === "TokensPurchased");
+        let tokensBought = "0";
+
+        if (purchaseEvent && purchaseEvent.args) {
+          tokensBought = ethers.utils.formatUnits(purchaseEvent.args.tokensBought, TOKEN_DECIMAL);
+        }
+
         const txDetails = {
           timestamp: Date.now(),
           user: address,
           tokenIn: "ETH",
           tokenOut: TOKEN_SYMBOL,
           amountIn: ethAmount,
-          amountOut: tokenReceived.toString(),
+          amountOut: tokensBought,
           transactionType: "BUY",
           hash: receipt.transactionHash,
         };
         saveTxToLocalStorage(txDetails);
         setReCall(prev => prev + 1);
-        notify.complete(toastId, `Successfully bought ${tokenReceived} ${TOKEN_SYMBOL}`);
+
+        // Toast the actual tokens received
+        notify.complete(toastId, `Successfully received ${tokensBought} ${TOKEN_SYMBOL}`);
       }
 
       return receipt;
