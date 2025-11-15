@@ -1,25 +1,19 @@
-// Dashboard.js
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Sidebar from "../Global/Sidebar";
-import { FiMoon, FiSun, FiHome, FiMenu } from "react-icons/fi";
+import { FiMoon, FiSun, FiHome, FiMenu, FiDownload } from "react-icons/fi";
 import Link from "next/link";
 import { useWeb3 } from "@/context/Web3Provider";
 
 const Dashboard = () => {
-  const {
-    contractInfo,
-    tokenBalances,
-    account,
-    isConnected,
-    globalLoad,
-    transactions, // REAL on-chain transactions
-  } = useWeb3();
+  const { contractInfo, tokenBalances, globalLoad, transactions, exportCSV, topBuyers } = useWeb3();
 
   const [isDarkMode, setIsDarkMode] = useState(true);
   const [activeTab, setActiveTab] = useState("overview");
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const [walletFilter, setWalletFilter] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const PAGE_SIZE = 5;
 
-  // 🔥 DARK MODE
   const toggleDarkMode = () => {
     const newTheme = !isDarkMode;
     setIsDarkMode(newTheme);
@@ -29,12 +23,22 @@ const Dashboard = () => {
 
   const textColor = isDarkMode ? "text-gray-100" : "text-gray-900";
   const secondaryTextColor = isDarkMode ? "text-gray-400" : "text-gray-500";
-
   const cardClasses = `p-6 rounded-xl shadow transition-all duration-300 ${
     isDarkMode ? "bg-[#1B1723]" : "bg-white"
   }`;
 
-  // 🔥 OVERVIEW CARDS
+  /** Filtered transactions */
+  const filteredTx = transactions.filter(tx => {
+    if (!walletFilter) return true;
+    const addr = tx.buyer || tx.claimer;
+    return addr.toLowerCase().includes(walletFilter.toLowerCase());
+  });
+
+  /** Pagination */
+  const pageCount = Math.ceil(filteredTx.length / PAGE_SIZE);
+  const paginatedTx = filteredTx.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+
+  /** Overview Cards */
   const renderOverviewCards = () => (
     <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8">
       <div className={cardClasses}>
@@ -43,14 +47,12 @@ const Dashboard = () => {
           {globalLoad ? "Loading..." : tokenBalances.usertbcBalance || "0"}
         </p>
       </div>
-
       <div className={cardClasses}>
         <h3 className={`text-lg font-medium ${secondaryTextColor}`}>Your ETH Balance</h3>
         <p className={`text-2xl font-bold mt-2 ${textColor}`}>
           {globalLoad ? "Loading..." : tokenBalances.userEthBalance || "0"}
         </p>
       </div>
-
       <div className={cardClasses}>
         <h3 className={`text-lg font-medium ${secondaryTextColor}`}>Total Tokens Sold</h3>
         <p className={`text-2xl font-bold mt-2 ${textColor}`}>
@@ -60,109 +62,132 @@ const Dashboard = () => {
     </div>
   );
 
-  // 🔥 TRANSACTIONS TAB
+  /** Transactions Tab */
   const renderTransactions = () => (
-    <section
-      className={`p-6 rounded-2xl shadow-md ${
-        isDarkMode ? "bg-[#14101A]" : "bg-white"
-      }`}
-    >
-      <h2 className="text-xl font-semibold text-purple-500 mb-4">
-        Recent Transactions
-      </h2>
+    <section className={`p-6 rounded-2xl shadow-md ${isDarkMode ? "bg-[#14101A]" : "bg-white"}`}>
+      <div className="flex justify-between mb-4">
+        <h2 className="text-xl font-semibold text-purple-500">Recent Transactions</h2>
+        <button
+          onClick={() => exportCSV(filteredTx)}
+          className="flex items-center gap-2 px-3 py-1 rounded bg-purple-500 text-white hover:bg-purple-600"
+        >
+          <FiDownload /> Export CSV
+        </button>
+      </div>
 
-      {transactions && transactions.length > 0 ? (
+      <input
+        type="text"
+        placeholder="Filter by wallet address"
+        className="mb-4 p-2 w-full rounded bg-gray-200 dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+        value={walletFilter}
+        onChange={e => {
+          setWalletFilter(e.target.value);
+          setCurrentPage(1);
+        }}
+      />
+
+      {paginatedTx.length > 0 ? (
         <ul className="divide-y divide-gray-700">
-          {transactions.map((tx, i) => (
-            <li key={i} className="py-2 text-sm">
-              {tx.buyer.slice(0, 6)}...{tx.buyer.slice(-4)} bought{" "}
-              <span className="font-semibold">{tx.tokensBought}</span> $RP —{" "}
-              <a
-                href={`https://sepolia.etherscan.io/tx/${tx.txHash}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-blue-400 hover:underline"
-              >
-                View
-              </a>
+          {paginatedTx.map((tx, i) => {
+            const addr = tx.buyer || tx.claimer;
+            const amount = tx.tokensBought || tx.tokensClaimed;
+            return (
+              <li key={tx.txHash + i} className="py-2 text-sm flex justify-between items-center">
+                <div>
+                  <span className="font-semibold">{tx.type}</span> - {addr.slice(0, 6)}...{addr.slice(-4)} bought{" "}
+                  <span className="font-semibold">{amount}</span> $RP
+                </div>
+                <a
+                  href={`https://sepolia.etherscan.io/tx/${tx.txHash}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-400 hover:underline"
+                >
+                  View
+                </a>
+              </li>
+            );
+          })}
+        </ul>
+      ) : (
+        <p className="text-gray-400">No transactions found.</p>
+      )}
+
+      <div className="flex justify-center mt-4 gap-2">
+        {Array.from({ length: pageCount }, (_, i) => (
+          <button
+            key={i}
+            onClick={() => setCurrentPage(i + 1)}
+            className={`px-3 py-1 rounded ${
+              currentPage === i + 1 ? "bg-purple-500 text-white" : "bg-gray-300 dark:bg-gray-700"
+            }`}
+          >
+            {i + 1}
+          </button>
+        ))}
+      </div>
+    </section>
+  );
+
+  /** Top Buyers Tab */
+  const renderTopBuyers = () => (
+    <section className={`p-6 rounded-2xl shadow-md ${isDarkMode ? "bg-[#14101A]" : "bg-white"}`}>
+      <h2 className="text-xl font-semibold text-purple-500 mb-4">Top Buyers</h2>
+      {topBuyers.length > 0 ? (
+        <ul className="divide-y divide-gray-700">
+          {topBuyers.map((buyer, i) => (
+            <li key={buyer.address} className="py-2 flex justify-between items-center text-sm">
+              <span>
+                {i + 1}. {buyer.address.slice(0, 6)}...{buyer.address.slice(-4)}
+              </span>
+              <span className="font-semibold">{buyer.totalTokens.toFixed(2)} $RP</span>
             </li>
           ))}
         </ul>
       ) : (
-        <p className="text-gray-400">No transactions yet.</p>
+        <p className="text-gray-400">No buyers found.</p>
       )}
     </section>
   );
 
-  // 🔥 ACTIVE TAB CONTENT
   const renderContent = () => {
     switch (activeTab) {
       case "overview":
         return renderOverviewCards();
       case "transactions":
         return renderTransactions();
+      case "topbuyers":
+        return renderTopBuyers();
       default:
         return null;
     }
   };
 
   return (
-    <div
-      className={`min-h-screen flex transition-colors duration-500 ${
-        isDarkMode ? "bg-[#0E0B12] text-gray-100" : "bg-gray-50 text-gray-900"
-      }`}
-    >
-      {/* DESKTOP SIDEBAR */}
+    <div className={`min-h-screen flex transition-colors duration-500 ${isDarkMode ? "bg-[#0E0B12] text-gray-100" : "bg-gray-50 text-gray-900"}`}>
       <aside className="w-64 border-r hidden md:block">
-        <Sidebar
-          activeTab={activeTab}
-          onMenuSelect={setActiveTab}
-          isDarkMode={isDarkMode}
-        />
+        <Sidebar activeTab={activeTab} onMenuSelect={setActiveTab} isDarkMode={isDarkMode} />
       </aside>
 
-      {/* MOBILE SIDEBAR OVERLAY */}
-      {mobileSidebarOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 md:hidden z-20"></div>
-      )}
+      {mobileSidebarOpen && <div className="fixed inset-0 bg-black bg-opacity-50 md:hidden z-20"></div>}
 
-      {/* MOBILE SLIDE-IN SIDEBAR */}
       <div
-        className={`fixed top-0 left-0 h-full w-64 z-30 transform ${
-          mobileSidebarOpen ? "translate-x-0" : "-translate-x-full"
-        } transition-transform duration-300 md:hidden`}
+        className={`fixed top-0 left-0 h-full w-64 z-30 transform ${mobileSidebarOpen ? "translate-x-0" : "-translate-x-full"} transition-transform duration-300 md:hidden`}
       >
-        <Sidebar
-          activeTab={activeTab}
-          onMenuSelect={(tab) => {
-            setActiveTab(tab);
-            setMobileSidebarOpen(false);
-          }}
-          isDarkMode={isDarkMode}
-        />
+        <Sidebar activeTab={activeTab} onMenuSelect={(tab) => { setActiveTab(tab); setMobileSidebarOpen(false); }} isDarkMode={isDarkMode} />
       </div>
 
-      {/* MAIN CONTENT */}
       <main className="flex-1 p-6 md:p-10 pb-24">
         <div className="flex justify-between items-center mb-8">
-          {/* MOBILE MENU BTN */}
-          <button
-            className="md:hidden p-2 rounded-lg bg-[#1B1723] text-white shadow"
-            onClick={() => setMobileSidebarOpen(true)}
-          >
+          <button className="md:hidden p-2 rounded-lg bg-[#1B1723] text-white shadow" onClick={() => setMobileSidebarOpen(true)}>
             <FiMenu size={22} />
           </button>
 
-          {/* PAGE TITLE */}
           <h1 className="text-2xl md:text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-500 to-purple-600 text-center flex-1">
             RPToken Dashboard
           </h1>
 
-          {/* DARK MODE TOGGLE */}
-          <button
-            onClick={toggleDarkMode}
-            className="p-2 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow"
-          >
+          <button onClick={toggleDarkMode} className="p-2 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow">
             {isDarkMode ? <FiSun size={20} /> : <FiMoon size={20} />}
           </button>
         </div>
@@ -170,39 +195,17 @@ const Dashboard = () => {
         {renderContent()}
       </main>
 
-      {/* MOBILE BOTTOM NAVIGATION */}
-      <div
-        className={`fixed bottom-0 left-0 w-full py-4 px-6 flex justify-between items-center md:hidden shadow-xl ${
-          isDarkMode ? "bg-[#1B1723]" : "bg-white"
-        }`}
-      >
-        <button
-          onClick={() => setActiveTab("overview")}
-          className={`flex-1 text-center ${
-            activeTab === "overview"
-              ? "text-purple-500 font-semibold"
-              : "text-gray-400"
-          }`}
-        >
+      <div className={`fixed bottom-0 left-0 w-full py-4 px-6 flex justify-between items-center md:hidden shadow-xl ${isDarkMode ? "bg-[#1B1723]" : "bg-white"}`}>
+        <button onClick={() => setActiveTab("overview")} className={`flex-1 text-center ${activeTab === "overview" ? "text-purple-500 font-semibold" : "text-gray-400"}`}>
           Overview
         </button>
-
-        <button
-          onClick={() => setActiveTab("transactions")}
-          className={`flex-1 text-center ${
-            activeTab === "transactions"
-              ? "text-purple-500 font-semibold"
-              : "text-gray-400"
-          }`}
-        >
+        <button onClick={() => setActiveTab("transactions")} className={`flex-1 text-center ${activeTab === "transactions" ? "text-purple-500 font-semibold" : "text-gray-400"}`}>
           Transactions
         </button>
-
-        {/* BACK HOME */}
-        <Link
-          href="/"
-          className="flex-1 text-center text-blue-500 font-semibold"
-        >
+        <button onClick={() => setActiveTab("topbuyers")} className={`flex-1 text-center ${activeTab === "topbuyers" ? "text-purple-500 font-semibold" : "text-gray-400"}`}>
+          Top Buyers
+        </button>
+        <Link href="/" className="flex-1 text-center text-blue-500 font-semibold">
           <FiHome size={22} className="mx-auto" />
         </Link>
       </div>

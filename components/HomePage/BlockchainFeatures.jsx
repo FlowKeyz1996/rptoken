@@ -1,26 +1,27 @@
 import React from "react";
+import { FaHome, FaMobileAlt, FaBuilding, FaUsers } from "react-icons/fa";
 
 const BlockchainFeatures = ({ isDarkMode }) => {
   const features = [
     {
       title: "Real Use Cases",
       text: "Pay rent, utilities, or buy groceries with $RP. Real-world utility for everyday needs.",
-      img: "https://example.com/realuse.png",
+      icon: <FaHome size={48} />,
     },
     {
       title: "Instant Airtime & Data",
       text: "Recharge your phone with one tap using crypto. Instant mobile top-ups worldwide.",
-      img: "https://example.com/airtime.png",
+      icon: <FaMobileAlt size={48} />,
     },
     {
       title: "Property Investments",
       text: "Fractional real estate ownership with blockchain. Invest in property with crypto.",
-      img: "https://example.com/property.png",
+      icon: <FaBuilding size={48} />,
     },
     {
       title: "Community Bidding Rewards",
       text: "Earn tokens via P2P interactions. Complete tasks and earn free RP rewards.",
-      img: "https://example.com/community.png",
+      icon: <FaUsers size={48} />,
     },
   ];
 
@@ -47,7 +48,7 @@ const BlockchainFeatures = ({ isDarkMode }) => {
             key={index}
             className={`flex flex-col items-center text-center p-6 rounded-2xl border ${cardBorder} ${cardBg} w-[260px]`}
           >
-            <img src={item.img} alt={item.title} className="w-20 h-20 mb-4 object-contain" />
+            <div className="mb-4 text-indigo-500">{item.icon}</div>
             <h3 className={`text-xl font-semibold mb-2 ${textColor}`}>{item.title}</h3>
             <p className={`text-sm ${secondaryTextColor}`}>{item.text}</p>
           </div>
