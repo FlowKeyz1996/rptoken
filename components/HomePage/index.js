@@ -17,8 +17,8 @@ import ReferralPopup from "../HomePage/ReferralPopup";
 export {
   Header,
   HeroSection,
-  Footer,
   BlockchainFeatures,
+  Footer,
   BrandSlider,
   BlockchainFeaturesGrid,
   RoadmapComponent,
