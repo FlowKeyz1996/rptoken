@@ -5,7 +5,7 @@ const TestimonialsSlider = ({ isDarkMode }) => {
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, margin: "-50px" });
 
-  // COLORS & STYLE SYSTEM (MATCHING YOUR SAMPLE)
+  // COLORS & STYLE SYSTEM
   const bgColor = isDarkMode ? "bg-[#0E0B12]" : "bg-[#F5F7FA]";
   const textColor = isDarkMode ? "text-white" : "text-gray-800";
   const secondaryTextColor = isDarkMode ? "text-gray-400" : "text-gray-600";
@@ -57,8 +57,12 @@ const TestimonialsSlider = ({ isDarkMode }) => {
 
       {/* TIMELINE */}
       <div className="relative w-full max-w-4xl mx-auto">
-        {/* Vertical Line */}
-        <div className="absolute left-1/2 top-0 transform -translate-x-1/2 h-full w-[3px] bg-gray-300 dark:bg-gray-700"></div>
+
+        {/* Vertical Line — ALWAYS visible */}
+        <div
+          className="absolute left-1/2 top-0 transform -translate-x-1/2
+                     h-full w-[3px] bg-gray-300 dark:bg-gray-700"
+        ></div>
 
         {/* Roadmap Items */}
         <div className="flex flex-col gap-20">
@@ -75,9 +79,11 @@ const TestimonialsSlider = ({ isDarkMode }) => {
                   isLeft ? "justify-start" : "justify-end"
                 }`}
               >
-                {/* Timeline Dot */}
-                <div className="absolute left-1/2 transform -translate-x-1/2">
-                  <div className="w-4 h-4 rounded-full bg-[#8877D8] border-4 border-white dark:border-[#0E0B12] shadow"></div>
+                {/* Timeline Dot — HIDDEN on mobile */}
+                <div className="absolute left-1/2 transform -translate-x-1/2 hidden md:block">
+                  <div className="w-4 h-4 rounded-full bg-[#8877D8] 
+                                  border-4 border-white dark:border-[#0E0B12] shadow">
+                  </div>
                 </div>
 
                 {/* Card */}
@@ -85,7 +91,7 @@ const TestimonialsSlider = ({ isDarkMode }) => {
                   whileHover={{ scale: 1.05 }}
                   className={`
                     ${cardBg} border ${cardBorder}
-                    w-[380px] md:w-[430px] 
+                    w-[380px] md:w-[430px]
                     rounded-2xl px-6 py-6 shadow-md
                   `}
                   style={{
@@ -93,7 +99,9 @@ const TestimonialsSlider = ({ isDarkMode }) => {
                     marginRight: isLeft ? "auto" : "0",
                   }}
                 >
-                  <p className="text-sm bg-[#EDEBFF] dark:bg-[#1A1726] text-[#8877D8] font-semibold px-3 py-1 rounded-full w-fit mb-3">
+                  <p className="text-sm bg-[#EDEBFF] dark:bg-[#1A1726]
+                                text-[#8877D8] font-semibold px-3 py-1
+                                rounded-full w-fit mb-3">
                     {item.quarter}
                   </p>
 
